@@ -1,105 +1,90 @@
 pipeline {
-    agent any
-    tools{
-        jdk 'jdk17'
-        maven 'maven3'
+    agent {
+        docker {
+            image 'maven:3.8.7-openjdk-17'
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // Access to Docker host
+        }
     }
-    environment{
-        SCANNER_HOME= tool 'sonar-scanner'
+
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages {
-        stage('git-checkout') {
+
+        stage('Git Checkout') {
             steps {
                 git 'https://github.com/jaiswaladi246/secretsanta-generator.git'
             }
         }
 
-        stage('Code-Compile') {
+        stage('Code Compile') {
             steps {
-               sh "mvn clean compile"
+                sh 'mvn clean compile'
             }
         }
-        
+
         stage('Unit Tests') {
             steps {
-               sh "mvn test"
-            }
-        }
-        
-		stage('OWASP Dependency Check') {
-            steps {
-               dependencyCheck additionalArguments: ' --scan ./ ', odcInstallation: 'DC'
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                sh 'mvn test'
             }
         }
 
-
-        stage('Sonar Analysis') {
+        stage('OWASP Dependency Check') {
             steps {
-               withSonarQubeEnv('sonar'){
-                   sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Santa \
-                   -Dsonar.java.binaries=. \
-                   -Dsonar.projectKey=Santa '''
-               }
+                dependencyCheck additionalArguments: ' --scan ./ ', odcInstallation: 'DC'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
 
-		 
-        stage('Code-Build') {
+        stage('SonarQube Analysis') {
             steps {
-               sh "mvn clean package"
+                withSonarQubeEnv('sonar') {
+                    sh '''$SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=Santa \
+                        -Dsonar.projectKey=Santa \
+                        -Dsonar.java.binaries=.'''
+                }
             }
         }
 
-         stage('Docker Build') {
+        stage('Code Build') {
             steps {
-               script{
-                   withDockerRegistry(credentialsId: 'docker-cred') {
-                    sh "docker build -t  santa123 . "
-                 }
-               }
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh 'docker build -t santa123 .'
+                    }
+                }
             }
         }
 
         stage('Docker Push') {
             steps {
-               script{
-                   withDockerRegistry(credentialsId: 'docker-cred') {
-                    sh "docker tag santa123 adijaiswal/santa123:latest"
-                    sh "docker push adijaiswal/santa123:latest"
-                 }
-               }
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred') {
+                        sh 'docker tag santa123 cprathap/santa:latest'
+                        sh 'docker push cprathap/santa:latest'
+                    }
+                }
             }
         }
-        
-        	 
+
         stage('Docker Image Scan') {
             steps {
-               sh "trivy image adijaiswal/santa123:latest "
-            }
-        }}
-        
-         post {
-            always {
-                emailext (
-                    subject: "Pipeline Status: ${BUILD_NUMBER}",
-                    body: '''<html>
-                                <body>
-                                    <p>Build Status: ${BUILD_STATUS}</p>
-                                    <p>Build Number: ${BUILD_NUMBER}</p>
-                                    <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
-                                </body>
-                            </html>''',
-                    to: 'jaiswaladi246@gmail.com',
-                    from: 'jenkins@example.com',
-                    replyTo: 'jenkins@example.com',
-                    mimeType: 'text/html'
-                )
+                sh 'trivy image cprathap/santa:latest'
             }
         }
-		
-		
 
-    
+        stage('K8s Deployment') {
+            steps {
+                sh 'kubectl apply -f deployment-service.yaml'
+            }
+        }
+    }
 }
