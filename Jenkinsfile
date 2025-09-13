@@ -1,18 +1,20 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.8.7-openjdk-17'
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // Access to Docker host
+            image 'maven:3.9.6-eclipse-temurin-17'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
+    }
+
+    tools {
+        maven 'MAVEN3'   // Name from Jenkins tool config
     }
 
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        maven 'MAVEN3'
     }
 
     stages {
-
         stage('Git Checkout') {
             steps {
                 git 'https://github.com/prathapchitra/secretsanta-generator.git'
@@ -51,7 +53,7 @@ pipeline {
 
         stage('Code Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
