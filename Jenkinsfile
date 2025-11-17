@@ -6,15 +6,8 @@ pipeline {
         }
     }
 
-    tools {
-        maven 'MAVEN3'   // Name from Jenkins tool config
-    }
-
-    environment {
-        SCANNER_HOME = tool 'sonar-scanner'
-    }
-
     stages {
+
         stage('Git Checkout') {
             steps {
                 git 'https://github.com/prathapchitra/secretsanta-generator.git'
@@ -43,10 +36,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar') {
-                    sh '''$SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=Santa \
-                        -Dsonar.projectKey=Santa \
-                        -Dsonar.java.binaries=.'''
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=Santa -Dsonar.projectName=Santa'
                 }
             }
         }
