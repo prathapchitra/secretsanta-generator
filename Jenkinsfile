@@ -7,6 +7,10 @@ pipeline {
         }
     }
 
+    environment {
+        KUBECONFIG = "/root/.kube/config"
+    }
+
     stages {
 
         stage('Git Checkout') {
