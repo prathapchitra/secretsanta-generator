@@ -1,4 +1,5 @@
 pipeline {
+
     agent {
         docker {
             image 'cprathap/maven-docker:latest'
@@ -28,7 +29,7 @@ pipeline {
 
         stage('OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: ' --scan ./ ', odcInstallation: 'DC'
+                dependencyCheck additionalArguments: '--scan ./', odcInstallation: 'DC'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
@@ -70,7 +71,11 @@ pipeline {
 
         stage('Docker Image Scan') {
             steps {
-                sh 'trivy image cprathap/santa:latest'
+                sh '''
+                    export TRIVY_CACHE_DIR=/tmp/trivy-cache
+                    mkdir -p $TRIVY_CACHE_DIR
+                    trivy image --cache-dir $TRIVY_CACHE_DIR cprathap/santa:latest
+                '''
             }
         }
 
