@@ -3,7 +3,7 @@ pipeline {
     agent {
         docker {
             image 'cprathap/maven-docker:latest'
-            args '--user root-v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/jenkins/.kube:/root/.kube'
+            args '--user root -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/jenkins/.kube:/root/.kube'
         }
     }
 
