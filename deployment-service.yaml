@@ -18,17 +18,34 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+
+          env:
+            - name: MONGO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: username
+
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: password
+
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongodb-service:27017/santaDB"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: santa-ssvc
 spec:
-  type: NodePort        # ✅ Required for nodePort
+  type: NodePort
   selector:
     app: santa
   ports:
     - protocol: TCP
-      port: 8080         # Service port inside cluster
-      targetPort: 8080   # Container port
-      nodePort: 32547    # Fixed NodePort (must be inside ports[])
+      port: 8080
+      targetPort: 8080
+      nodePort: 32547
