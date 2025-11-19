@@ -1,11 +1,8 @@
 package com.notthebest.demo.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
+import org.springframework.data.mongodb.repository.MongoRepository;
 import com.notthebest.demo.model.Person;
 
-@Repository
-public interface PersonRepo extends JpaRepository<Person, Integer> {
+public interface PersonRepo extends MongoRepository<Person, String> {
 
 }
